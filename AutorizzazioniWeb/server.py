@@ -266,8 +266,17 @@ class Handler(BaseHTTPRequestHandler):
         elif path == '/api/upload':
             try:
                 length = int(self.headers.get('Content-Length', 0))
-                raw = self.rfile.read(length).decode('utf-8')
-                # Salva direttamente
+                raw_bytes = self.rfile.read(length)
+                # Prova UTF-8 poi Latin-1 (per CSV con caratteri italiani)
+                for enc in ('utf-8-sig', 'utf-8', 'latin-1', 'cp1252'):
+                    try:
+                        raw = raw_bytes.decode(enc)
+                        break
+                    except (UnicodeDecodeError, LookupError):
+                        continue
+                else:
+                    raw = raw_bytes.decode('latin-1')
+                # Salva sempre in UTF-8
                 with open(CSV_PATH, 'w', encoding='utf-8', newline='') as f:
                     f.write(raw)
                 self.send_json({'ok': True, 'righe': len(raw.splitlines())})
