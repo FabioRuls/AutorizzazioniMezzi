@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutorizzaMezzi</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Verdana, sans-serif; background: #bcd2f3; min-height: 100vh; }
+
+  /* ── NAVBAR ── */
+  nav {
+    background: #3333ff; color: #fff;
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 24px; flex-wrap: wrap;
+  }
+  nav h1 { font-size: 28px; font-weight: bold; flex: 1; }
+  nav button {
+    background: rgba(255,255,255,0.15); color: #fff;
+    border: 1px solid rgba(255,255,255,0.4); border-radius: 6px;
+    padding: 8px 18px; font-size: 14px; font-weight: bold;
+    cursor: pointer; transition: background .2s;
+  }
+  nav button:hover { background: rgba(255,255,255,0.3); }
+
+  /* ── CARDS ── */
+  .cards {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 16px; padding: 20px 24px;
+  }
+  .card {
+    background: #355fe8; color: #fff; border-radius: 10px;
+    border: 2px solid #fff; display: flex; overflow: hidden;
+    min-height: 90px;
+  }
+  .card-bar { width: 12px; flex-shrink: 0; }
+  .card-body { padding: 10px 14px; }
+  .card-title { font-size: 13px; font-weight: bold; opacity: .9; }
+  .card-value { font-size: 28px; font-weight: bold; margin-top: 6px; }
+
+  /* ── SEZIONE PRINCIPALE ── */
+  .main { padding: 0 24px 24px; }
+
+  /* ── BOTTONI AZIONE ── */
+  .actions {
+    display: flex; gap: 14px; flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .btn {
+    padding: 10px 28px; border: none; border-radius: 7px;
+    font-size: 15px; font-weight: bold; cursor: pointer;
+    color: #fff; transition: opacity .2s;
+  }
+  .btn:hover { opacity: .85; }
+  .btn-blue   { background: #3333ff; }
+  .btn-red    { background: #c80000; }
+  .btn-green  { background: #007700; }
+  .btn-orange { background: #cc5500; }
+
+  /* ── FILTRI / RICERCA ── */
+  .filters {
+    background: #e8f0fb; border-radius: 8px;
+    padding: 14px 18px; margin-bottom: 16px;
+    display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;
+  }
+  .filters label { font-size: 12px; font-weight: bold; display: block; margin-bottom: 4px; }
+  .filters input, .filters select {
+    padding: 7px 10px; border: 1px solid #aac; border-radius: 5px;
+    font-size: 13px; min-width: 160px;
+  }
+
+  /* ── TABELLA ── */
+  .table-wrap { overflow-x: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+  table { width: 100%; border-collapse: collapse; background: #fff; font-size: 13px; }
+  thead th {
+    background: #3333ff; color: #fff; padding: 10px 12px;
+    text-align: left; cursor: pointer; user-select: none;
+    white-space: nowrap;
+  }
+  thead th:hover { background: #2222dd; }
+  tbody tr:nth-child(even) { background: #f0f4ff; }
+  tbody tr:hover { background: #dce8ff; }
+  td { padding: 8px 12px; border-bottom: 1px solid #dde; }
+  td.actions-cell { white-space: nowrap; }
+  td.actions-cell button {
+    padding: 4px 10px; margin-right: 4px; border: none;
+    border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; color: #fff;
+  }
+  .btn-edit { background: #3355cc; }
+  .btn-del  { background: #cc2200; }
+
+  /* ── BADGE STATO ── */
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 12px;
+    font-size: 11px; font-weight: bold; color: #fff;
+  }
+  .badge-ATTIVA     { background: #007700; }
+  .badge-SCADUTA    { background: #cc2200; }
+  .badge-ANNULLATA  { background: #666; }
+  .badge-NEGATA     { background: #884400; }
+  .badge-SOSPESA    { background: #886600; }
+  .badge-RIGETTATA  { background: #550055; }
+  .badge-SCONOSCIUTO { background: #999; }
+
+  /* ── COLORE RIGHE SCADUTE ── */
+  tr.scaduta-grave td { background: #ffd0d0 !important; }
+  tr.scaduta-media td { background: #ffe8c0 !important; }
+  tr.scaduta-lieve td { background: #ffffc0 !important; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.5); z-index: 100;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #fff; border-radius: 10px;
+    padding: 28px; width: 500px; max-width: 95vw;
+    box-shadow: 0 8px 32px rgba(0,0,0,.3);
+  }
+  .modal h2 { margin-bottom: 18px; color: #3333ff; }
+  .form-row { margin-bottom: 14px; }
+  .form-row label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; }
+  .form-row input, .form-row select {
+    width: 100%; padding: 8px 10px;
+    border: 1px solid #aac; border-radius: 5px; font-size: 14px;
+  }
+  .modal-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 28px; right: 28px;
+    background: #222; color: #fff;
+    padding: 12px 22px; border-radius: 8px;
+    font-size: 14px; opacity: 0;
+    transition: opacity .3s; z-index: 200;
+    pointer-events: none;
+  }
+  #toast.show { opacity: 1; }
+  #toast.ok  { background: #007700; }
+  #toast.err { background: #cc2200; }
+
+  /* ── INFO TABELLA ── */
+  .table-info {
+    font-size: 12px; color: #444; margin-bottom: 8px;
+  }
+
+  @media (max-width: 768px) {
+    .cards { grid-template-columns: repeat(2, 1fr); }
+    nav h1 { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav>
+  <h1>AutorizzaMezzi</h1>
+  <button onclick="mostraSezione('home')">🏠 Home</button>
+  <button onclick="mostraSezione('scadute')">⚠️ Licenze scadute</button>
+  <button onclick="apriModale('inserimento')">➕ Inserisci</button>
+  <button onclick="caricaCSVEsterno()">📂 Carica CSV</button>
+  <button onclick="scaricaCSV()">💾 Scarica CSV</button>
+</nav>
+
+<!-- CARDS DASHBOARD -->
+<div class="cards" id="dashboard">
+  <div class="card"><div class="card-bar" style="background:#ff9933"></div>
+    <div class="card-body"><div class="card-title">Totale autorizzazioni</div>
+    <div class="card-value" id="c-totale">—</div></div></div>
+  <div class="card"><div class="card-bar" style="background:#00cc00"></div>
+    <div class="card-body"><div class="card-title">Autorizzazioni attive</div>
+    <div class="card-value" id="c-attive">—</div></div></div>
+  <div class="card"><div class="card-bar" style="background:#cc2200"></div>
+    <div class="card-body"><div class="card-title">Autorizzazioni scadute</div>
+    <div class="card-value" id="c-scadute">—</div></div></div>
+  <div class="card"><div class="card-bar" style="background:#ffff00"></div>
+    <div class="card-body"><div class="card-title">Tipo mezzo più frequente</div>
+    <div class="card-value" id="c-tipo" style="font-size:16px;margin-top:10px">—</div></div></div>
+</div>
+
+<!-- SEZIONE HOME -->
+<div class="main" id="sezione-home">
+  <div class="filters">
+    <div>
+      <label>Cerca (nome, posizione, tipo...)</label>
+      <input type="text" id="filtro-testo" placeholder="es. BARBER, via Cavour..." oninput="filtra()">
+    </div>
+    <div>
+      <label>Stato</label>
+      <select id="filtro-stato" onchange="filtra()">
+        <option value="">Tutti</option>
+        <option value="ATTIVA">Attiva</option>
+        <option value="SCADUTA">Scaduta</option>
+        <option value="ANNULLATA">Annullata</option>
+        <option value="NEGATA">Negata</option>
+        <option value="SOSPESA">Sospesa</option>
+        <option value="RIGETTATA">Rigettata</option>
+        <option value="SCONOSCIUTO">Sconosciuto</option>
+      </select>
+    </div>
+    <div>
+      <label>Tipo mezzo</label>
+      <select id="filtro-tipo" onchange="filtra()">
+        <option value="">Tutti</option>
+      </select>
+    </div>
+    <div style="margin-left:auto">
+      <label>&nbsp;</label>
+      <button class="btn btn-blue" onclick="resetFiltri()">✖ Resetta filtri</button>
+    </div>
+  </div>
+
+  <div class="table-info" id="table-info"></div>
+
+  <div class="table-wrap">
+    <table id="tabella">
+      <thead>
+        <tr>
+          <th onclick="ordina('numero')">#</th>
+          <th onclick="ordina('scadenza')">Scadenza</th>
+          <th onclick="ordina('stato')">Stato</th>
+          <th onclick="ordina('richiedente')">Richiedente</th>
+          <th onclick="ordina('posizione')">Posizione insegna</th>
+          <th onclick="ordina('tipo_mezzo')">Tipo mezzo</th>
+          <th>Azioni</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- SEZIONE SCADUTE -->
+<div class="main" id="sezione-scadute" style="display:none">
+  <h2 style="color:#c80000;margin-bottom:16px">⚠️ Autorizzazioni con licenza scaduta</h2>
+  <div class="table-info" id="info-scadute"></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>Scadenza</th><th>Richiedente</th>
+          <th>Posizione insegna</th><th>Tipo mezzo</th><th>Giorni scaduta</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-scadute"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL INSERIMENTO / MODIFICA -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h2 id="modal-titolo">Inserimento</h2>
+    <input type="hidden" id="modal-numero">
+    <div class="form-row">
+      <label>Scadenza (gg.mm.aaaa) — oppure: ANNULLATA, NEGATA, SOSPESA</label>
+      <input type="text" id="f-scadenza" placeholder="es. 31.12.2026">
+    </div>
+    <div class="form-row">
+      <label>Richiedente *</label>
+      <input type="text" id="f-richiedente" placeholder="Nome azienda o persona">
+    </div>
+    <div class="form-row">
+      <label>Posizione insegna</label>
+      <input type="text" id="f-posizione" placeholder="Via, indirizzo...">
+    </div>
+    <div class="form-row">
+      <label>Tipo mezzo *</label>
+      <input type="text" id="f-tipo" placeholder="es. CARTELLONE, INSEGNE...">
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-blue" onclick="chiudiModale()">Annulla</button>
+      <button class="btn btn-green" onclick="salvaModale()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<!-- INPUT FILE NASCOSTO per caricamento CSV -->
+<input type="file" id="input-csv" accept=".csv" style="display:none" onchange="handleCSVUpload(event)">
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ── Stato globale ────────────────────────────────────────────────────────────
+let dati = [];
+let dati_filtrati = [];
+let sort_col = 'numero';
+let sort_asc = true;
+let modal_mode = 'inserimento'; // 'inserimento' | 'modifica'
+
+// ── Avvio ────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  caricaDati();
+});
+
+async function caricaDati() {
+  try {
+    const res = await fetch('/api/autorizzazioni');
+    dati = await res.json();
+    aggiornaDashboard();
+    popolaTipiMezzo();
+    filtra();
+  } catch(e) {
+    toast('Errore nel caricamento dati: ' + e.message, 'err');
+  }
+}
+
+// ── Dashboard ────────────────────────────────────────────────────────────────
+async function aggiornaDashboard() {
+  try {
+    const res = await fetch('/api/info');
+    const info = await res.json();
+    document.getElementById('c-totale').textContent  = info.totale;
+    document.getElementById('c-attive').textContent  = info.attive;
+    document.getElementById('c-scadute').textContent = info.scadute;
+    document.getElementById('c-tipo').textContent    = info.tipo_max;
+  } catch(e) {}
+}
+
+// ── Filtri ───────────────────────────────────────────────────────────────────
+function popolaTipiMezzo() {
+  const tipi = [...new Set(dati.map(r => r.tipo_mezzo))].sort();
+  const sel = document.getElementById('filtro-tipo');
+  tipi.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t; opt.textContent = t;
+    sel.appendChild(opt);
+  });
+}
+
+function filtra() {
+  const testo = document.getElementById('filtro-testo').value.toLowerCase();
+  const stato = document.getElementById('filtro-stato').value;
+  const tipo  = document.getElementById('filtro-tipo').value;
+
+  dati_filtrati = dati.filter(r => {
+    const matchTesto = !testo || [r.richiedente, r.posizione, r.tipo_mezzo, String(r.numero)]
+      .some(v => v.toLowerCase().includes(testo));
+    const matchStato = !stato || r.stato === stato;
+    const matchTipo  = !tipo  || r.tipo_mezzo === tipo;
+    return matchTesto && matchStato && matchTipo;
+  });
+
+  ordinaEMostra();
+}
+
+function resetFiltri() {
+  document.getElementById('filtro-testo').value = '';
+  document.getElementById('filtro-stato').value = '';
+  document.getElementById('filtro-tipo').value  = '';
+  filtra();
+}
+
+// ── Ordinamento ───────────────────────────────────────────────────────────────
+function ordina(col) {
+  if (sort_col === col) sort_asc = !sort_asc;
+  else { sort_col = col; sort_asc = true; }
+  ordinaEMostra();
+}
+
+function ordinaEMostra() {
+  const copia = [...dati_filtrati];
+  copia.sort((a, b) => {
+    let va = a[sort_col] ?? '', vb = b[sort_col] ?? '';
+    if (sort_col === 'numero') { va = Number(va); vb = Number(vb); }
+    else { va = String(va).toLowerCase(); vb = String(vb).toLowerCase(); }
+    if (va < vb) return sort_asc ? -1 : 1;
+    if (va > vb) return sort_asc ?  1 : -1;
+    return 0;
+  });
+  renderTabella(copia);
+}
+
+// ── Render tabella ────────────────────────────────────────────────────────────
+function renderTabella(righe) {
+  const tbody = document.getElementById('tbody');
+  const oggi = new Date(); oggi.setHours(0,0,0,0);
+  tbody.innerHTML = '';
+
+  document.getElementById('table-info').textContent =
+    `Mostrati ${righe.length} di ${dati.length} record`;
+
+  righe.forEach(r => {
+    const tr = document.createElement('tr');
+    // Colore riga scaduta
+    if (r.stato === 'SCADUTA' && r.scadenza_iso) {
+      const giorni = Math.floor((oggi - new Date(r.scadenza_iso)) / 86400000);
+      if (giorni > 365)     tr.className = 'scaduta-grave';
+      else if (giorni > 90) tr.className = 'scaduta-media';
+      else                  tr.className = 'scaduta-lieve';
+    }
+
+    tr.innerHTML = `
+      <td>${r.numero}</td>
+      <td>${r.scadenza || '—'}</td>
+      <td><span class="badge badge-${r.stato}">${r.stato}</span></td>
+      <td>${r.richiedente}</td>
+      <td>${r.posizione || '—'}</td>
+      <td>${r.tipo_mezzo}</td>
+      <td class="actions-cell">
+        <button class="btn-edit" onclick="apriModifica(${r.numero})">✏️ Modifica</button>
+        <button class="btn-del"  onclick="eliminaConferma(${r.numero}, '${r.richiedente.replace(/'/g,"\\'")}')">🗑️ Elimina</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── Sezione Scadute ───────────────────────────────────────────────────────────
+function mostraSezione(quale) {
+  document.getElementById('sezione-home').style.display    = quale === 'home'    ? '' : 'none';
+  document.getElementById('sezione-scadute').style.display = quale === 'scadute' ? '' : 'none';
+  if (quale === 'scadute') renderScadute();
+}
+
+function renderScadute() {
+  const oggi = new Date(); oggi.setHours(0,0,0,0);
+  const scadute = dati
+    .filter(r => r.stato === 'SCADUTA')
+    .sort((a, b) => (a.scadenza_iso || '').localeCompare(b.scadenza_iso || ''));
+
+  document.getElementById('info-scadute').textContent =
+    `Totale: ${scadute.length} autorizzazioni scadute`;
+
+  const tbody = document.getElementById('tbody-scadute');
+  tbody.innerHTML = '';
+  scadute.forEach(r => {
+    const giorni = r.scadenza_iso
+      ? Math.floor((oggi - new Date(r.scadenza_iso)) / 86400000) : '—';
+    const cls = typeof giorni === 'number'
+      ? (giorni > 365 ? 'scaduta-grave' : giorni > 90 ? 'scaduta-media' : 'scaduta-lieve')
+      : '';
+    const tr = document.createElement('tr');
+    tr.className = cls;
+    tr.innerHTML = `
+      <td>${r.numero}</td>
+      <td>${r.scadenza}</td>
+      <td>${r.richiedente}</td>
+      <td>${r.posizione || '—'}</td>
+      <td>${r.tipo_mezzo}</td>
+      <td><strong>${giorni}</strong></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+function apriModale(mode, r) {
+  modal_mode = mode;
+  document.getElementById('modal-titolo').textContent =
+    mode === 'inserimento' ? 'Nuova autorizzazione' : 'Modifica autorizzazione';
+  document.getElementById('modal-numero').value    = r ? r.numero : '';
+  document.getElementById('f-scadenza').value      = r ? r.scadenza    : '';
+  document.getElementById('f-richiedente').value   = r ? r.richiedente : '';
+  document.getElementById('f-posizione').value     = r ? r.posizione   : '';
+  document.getElementById('f-tipo').value          = r ? r.tipo_mezzo  : '';
+  document.getElementById('modal-overlay').classList.add('open');
+  document.getElementById('f-richiedente').focus();
+}
+
+function apriModifica(numero) {
+  const r = dati.find(x => x.numero === numero);
+  if (r) apriModale('modifica', r);
+}
+
+function chiudiModale() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+async function salvaModale() {
+  const scadenza    = document.getElementById('f-scadenza').value.trim();
+  const richiedente = document.getElementById('f-richiedente').value.trim();
+  const posizione   = document.getElementById('f-posizione').value.trim();
+  const tipo_mezzo  = document.getElementById('f-tipo').value.trim();
+
+  if (!richiedente || !tipo_mezzo) {
+    toast('Richiedente e Tipo mezzo sono obbligatori', 'err');
+    return;
+  }
+
+  const payload = { scadenza, richiedente, posizione, tipo_mezzo };
+
+  try {
+    let res;
+    if (modal_mode === 'inserimento') {
+      res = await fetch('/api/autorizzazioni', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+    } else {
+      const numero = document.getElementById('modal-numero').value;
+      res = await fetch(`/api/autorizzazioni/${numero}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+    }
+    const data = await res.json();
+    if (data.errore) { toast(data.errore, 'err'); return; }
+    chiudiModale();
+    toast(modal_mode === 'inserimento'
+      ? `Inserita autorizzazione n° ${data.numero}`
+      : 'Modifica salvata', 'ok');
+    await caricaDati();
+  } catch(e) {
+    toast('Errore: ' + e.message, 'err');
+  }
+}
+
+// ── Eliminazione ──────────────────────────────────────────────────────────────
+function eliminaConferma(numero, richiedente) {
+  if (!confirm(`Eliminare l'autorizzazione n° ${numero} (${richiedente})?`)) return;
+  eliminaRecord(numero);
+}
+
+async function eliminaRecord(numero) {
+  try {
+    const res = await fetch(`/api/autorizzazioni/${numero}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.errore) { toast(data.errore, 'err'); return; }
+    toast(`Autorizzazione n° ${numero} eliminata`, 'ok');
+    await caricaDati();
+  } catch(e) {
+    toast('Errore: ' + e.message, 'err');
+  }
+}
+
+// ── Caricamento CSV esterno ───────────────────────────────────────────────────
+function caricaCSVEsterno() {
+  document.getElementById('input-csv').click();
+}
+
+async function handleCSVUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const testo = await file.text();
+  try {
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain'},
+      body: testo
+    });
+    const data = await res.json();
+    if (data.errore) { toast(data.errore, 'err'); return; }
+    toast('CSV caricato e salvato sul server', 'ok');
+    await caricaDati();
+    // Reset input per permettere di ricaricare lo stesso file
+    event.target.value = '';
+  } catch(e) {
+    toast('Errore upload: ' + e.message, 'err');
+  }
+}
+
+// ── Scarica CSV ───────────────────────────────────────────────────────────────
+function scaricaCSV() {
+  const righe = [
+    ['Numero autorizzazione','Scadenza','Richiedente','Posizione insegna','Tipo di mezzo pubblico'],
+    ...dati.map(r => [r.numero, r.scadenza, r.richiedente, r.posizione, r.tipo_mezzo])
+  ];
+  const csv = righe.map(r => r.map(v => `"${String(v ?? '').replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const blob = new Blob(['\uFEFF' + csv], {type: 'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'autorizzazioni.csv';
+  a.click();
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function toast(msg, tipo = 'ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + tipo;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.className = ''; }, 3000);
+}
+
+// ── Chiudi modal con ESC ──────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') chiudiModale();
+});
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) chiudiModale();
+});
+</script>
+</body>
+</html>
