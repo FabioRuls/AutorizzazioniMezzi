@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="it" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoAdvertising Suite</title>
+
+<link rel="icon" type="image/png" href="logo-novellara.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        colors: {
+          bgMain: '#0F1117',
+          surface: '#171923',
+          surfaceHover: '#1E2230',
+          primary: '#8B5CF6',
+          primaryHover: '#7C3AED',
+          textPrimary: '#F8FAFC',
+          textSecondary: '#94A3B8',
+          success: '#10B981',
+          danger: '#EF4444',
+          borderCol: 'rgba(255,255,255,0.08)'
+        },
+        fontFamily: {
+          sans: ['Geist', 'Inter', 'system-ui', 'sans-serif'],
+        }
+      }
+    }
+  }
+</script>
+
+<style>
+  body {
+    background-color: #0F1117;
+    color: #F8FAFC;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #0F1117; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 100px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+  tr.scaduta-grave { background-color: rgba(239, 68, 68, 0.04) !important; }
+  tr.scaduta-grave:hover { background-color: rgba(239, 68, 68, 0.07) !important; }
+  tr.scaduta-grave td { color: #fca5a5 !important; }
+
+  tr.scaduta-media { background-color: rgba(245, 158, 11, 0.03) !important; }
+  tr.scaduta-media:hover { background-color: rgba(245, 158, 11, 0.06) !important; }
+  tr.scaduta-media td { color: #fde047 !important; }
+
+  tr.scaduta-lieve { background-color: rgba(234, 179, 8, 0.015) !important; }
+  tr.scaduta-lieve:hover { background-color: rgba(234, 179, 8, 0.04) !important; }
+  tr.scaduta-lieve td { color: #fef08a !important; }
+
+  .modal-transition {
+    transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1), transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+</style>
+
+<script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="font-sans antialiased selection:bg-primary/30 selection:text-white">
+
+<nav class="sticky top-0 z-40 w-full border-b border-borderCol bg-bgMain/70 backdrop-blur-md transition-all duration-200">
+  <div class="mx-auto flex max-w-7xl h-14 items-center justify-between px-6">
+    
+    <div class="flex items-center gap-2.5 cursor-pointer" onclick="mostraSezione('home')">
+      <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primaryHover shadow-md shadow-primary/20">
+        <i data-lucide="layers" class="h-4 w-4 text-white"></i>
+      </div>
+      <span class="text-sm font-semibold tracking-tight text-textPrimary">AutoAdvertising Suite</span>
+      <span class="rounded bg-white/5 px-1.5 py-0.5 text-[10px] font-medium text-textSecondary border border-white/5">v2.1</span>
+    </div>
+
+    <div class="hidden md:flex items-center gap-1">
+      <button id="nav-home" onclick="mostraSezione('home')" class="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium bg-white/5 text-textPrimary transition-all duration-150">
+        <i data-lucide="layout-dashboard" class="h-3.5 w-3.5"></i> Dashboard
+      </button>
+      <button id="nav-scadute" onclick="mostraSezione('scadute')" class="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium text-textSecondary hover:text-textPrimary hover:bg-white/5 transition-all duration-150">
+        <i data-lucide="alert-triangle" class="h-3.5 w-3.5 text-danger"></i> Autorizzazioni Scadute
+      </button>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button onclick="caricaCSVEsterno()" class="inline-flex items-center gap-1.5 rounded-lg border border-borderCol bg-surface px-3 py-1.5 text-xs font-medium text-textSecondary hover:bg-surfaceHover hover:text-textPrimary transition-all duration-150">
+        <i data-lucide="upload-cloud" class="h-3.5 w-3.5"></i> Importa CSV
+      </button>
+      <button onclick="scaricaCSV()" class="inline-flex items-center gap-1.5 rounded-lg border border-borderCol bg-surface px-3 py-1.5 text-xs font-medium text-textSecondary hover:bg-surfaceHover hover:text-textPrimary transition-all duration-150">
+        <i data-lucide="download" class="h-3.5 w-3.5"></i> Esporta
+      </button>
+      <button onclick="apriModale('inserimento')" class="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primaryHover shadow-sm shadow-primary/10 transition-all duration-150">
+        <i data-lucide="plus" class="h-3.5 w-3.5"></i> Nuovo Record
+      </button>
+    </div>
+
+  </div>
+</nav>
+
+<main class="mx-auto max-w-7xl px-6 py-8">
+
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+    <div class="group rounded-xl border border-borderCol bg-surface p-5 shadow-sm transition-all duration-200 hover:border-white/15">
+      <div class="flex items-center justify-between space-y-0 pb-2">
+        <span class="text-xs font-medium text-textSecondary">Totale Autorizzazioni</span>
+        <div class="rounded-md bg-white/5 p-1.5 text-textSecondary group-hover:text-textPrimary transition-colors">
+          <i data-lucide="file-text" class="h-4 w-4"></i>
+        </div>
+      </div>
+      <div class="flex items-baseline gap-2">
+        <div class="text-2xl font-bold tracking-tight text-textPrimary" id="c-totale">—</div>
+        <span class="text-[10px] font-medium text-textSecondary">Database attivo</span>
+      </div>
+    </div>
+
+    <div class="group rounded-xl border border-borderCol bg-surface p-5 shadow-sm transition-all duration-200 hover:border-white/15">
+      <div class="flex items-center justify-between space-y-0 pb-2">
+        <span class="text-xs font-medium text-textSecondary">Autorizzazioni Attive</span>
+        <div class="rounded-md bg-success/10 p-1.5 text-success">
+          <i data-lucide="check-circle" class="h-4 w-4"></i>
+        </div>
+      </div>
+      <div class="flex items-baseline gap-2">
+        <div class="text-2xl font-bold tracking-tight text-success" id="c-attive">—</div>
+        <span class="text-[10px] font-medium text-success/80">Conformi</span>
+      </div>
+    </div>
+
+    <div class="group rounded-xl border border-borderCol bg-surface p-5 shadow-sm transition-all duration-200 hover:border-white/15">
+      <div class="flex items-center justify-between space-y-0 pb-2">
+        <span class="text-xs font-medium text-textSecondary">Autorizzazioni Scadute</span>
+        <div class="rounded-md bg-danger/10 p-1.5 text-danger">
+          <i data-lucide="clock" class="h-4 w-4"></i>
+        </div>
+      </div>
+      <div class="flex items-baseline gap-2">
+        <div class="text-2xl font-bold tracking-tight text-danger" id="c-scadute">—</div>
+        <span class="text-[10px] font-medium text-danger/80">Scadute</span>
+      </div>
+    </div>
+
+    <div class="group rounded-xl border border-borderCol bg-surface p-5 shadow-sm transition-all duration-200 hover:border-white/15">
+      <div class="flex items-center justify-between space-y-0 pb-2">
+        <span class="text-xs font-medium text-textSecondary">Tipo Mezzo Frequente</span>
+        <div class="rounded-md bg-primary/10 p-1.5 text-primary">
+          <i data-lucide="bar-chart-3" class="h-4 w-4"></i>
+        </div>
+      </div>
+      <div class="flex items-baseline gap-2 overflow-hidden truncate">
+        <div class="text-lg font-bold tracking-tight text-primary truncate max-w-full" id="c-tipo">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 gap-4 lg:grid-cols-3 mb-8">
+    <div class="rounded-xl border border-borderCol bg-surface p-5 shadow-sm">
+      <div class="flex items-center justify-between pb-3 border-b border-borderCol mb-4">
+        <h3 class="text-xs font-semibold tracking-tight text-textPrimary">Stato Autorizzazioni</h3>
+        <span id="analytics-totale" class="rounded bg-white/5 px-1.5 py-0.5 text-[10px] font-medium text-textSecondary border border-white/5">Totale: 0</span>
+      </div>
+      <div class="relative w-full h-56 flex items-center justify-center">
+        <canvas id="chartStato"></canvas>
+      </div>
+    </div>
+
+    <div class="lg:col-span-2 rounded-xl border border-borderCol bg-surface p-5 shadow-sm">
+      <div class="flex items-center justify-between pb-3 border-b border-borderCol mb-4">
+        <h3 class="text-xs font-semibold tracking-tight text-textPrimary">Distribuzione Mezzi Pubblicitari</h3>
+      </div>
+      <div class="relative w-full h-56">
+        <canvas id="chartMezzi"></canvas>
+      </div>
+    </div>
+
+    <div class="lg:col-span-3 rounded-xl border border-borderCol bg-surface p-5 shadow-sm">
+      <div class="flex items-center justify-between pb-3 border-b border-borderCol mb-4">
+        <h3 class="text-xs font-semibold tracking-tight text-textPrimary">Analisi Autorizzazioni Scadute</h3>
+        <span id="analytics-scadute-totale" class="rounded bg-danger/10 px-1.5 py-0.5 text-[10px] font-medium text-danger border border-danger/20">0 Autorizzazioni Scadute</span>
+      </div>
+      <div class="relative w-full h-48">
+        <canvas id="chartScadenze"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div id="sezione-home" class="space-y-4">
+    <div class="flex flex-col gap-3 rounded-xl border border-borderCol bg-surface p-4 md:flex-row md:items-center">
+      <div class="relative flex-1">
+        <i data-lucide="search" class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-textSecondary"></i>
+        <input type="text" id="filtro-testo" placeholder="Cerca per richiedente, posizione, ID..." oninput="filtra()"
+               class="w-full rounded-lg border border-borderCol bg-bgMain pl-9 pr-4 py-1.5 text-xs text-textPrimary placeholder:text-textSecondary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all duration-150">
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="flex items-center gap-2">
+          <label class="text-[11px] font-semibold text-textSecondary uppercase tracking-wider">Stato</label>
+          <select id="filtro-stato" onchange="filtra()"
+                  class="rounded-lg border border-borderCol bg-bgMain px-2.5 py-1.5 text-xs font-medium text-textPrimary focus:border-primary focus:outline-none transition-all duration-150">
+            <option value="">Tutti gli stati</option>
+            <option value="ATTIVA">Attiva</option>
+            <option value="SCADUTA">Scaduta</option>
+            <option value="ANNULLATA">Annullata</option>
+            <option value="NEGATA">Negata</option>
+            <option value="SOSPESA">Sospesa</option>
+            <option value="RIGETTATA">Rigettata</option>
+            <option value="SCONOSCIUTO">Sconosciuto</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <label class="text-[11px] font-semibold text-textSecondary uppercase tracking-wider">Categoria</label>
+          <select id="filtro-tipo" onchange="filtra()"
+                  class="rounded-lg border border-borderCol bg-bgMain px-2.5 py-1.5 text-xs font-medium text-textPrimary focus:border-primary focus:outline-none transition-all duration-150">
+            <option value="">Tutte le categorie</option>
+            <option value="CARTELLO">Cartello / Cartellone</option>
+            <option value="ROTONDA">Rotonda</option>
+            <option value="TOTEM">Totem</option>
+            <option value="INSEGNA">Insegna / Insegne</option>
+            <option value="VETROFAN">Vetrofania / Vetrofanie</option>
+          </select>
+        </div>
+
+        <button onclick="resetFiltri()" class="inline-flex h-8 items-center justify-center rounded-lg px-2.5 text-xs font-medium text-textSecondary hover:text-textPrimary hover:bg-white/5 transition-all duration-150">
+          <i data-lucide="rotate-ccw" class="h-3 w-3 mr-1"></i> Resetta
+        </button>
+      </div>
+    </div>
+
+    <div class="text-xs font-medium text-textSecondary px-1" id="table-info"></div>
+
+    <div class="overflow-hidden rounded-xl border border-borderCol bg-surface shadow-md">
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse text-xs text-left">
+          <thead>
+            <tr class="border-b border-borderCol bg-bgMain/40 font-medium text-textSecondary select-none">
+              <th onclick="ordina('numero')" class="cursor-pointer p-3.5 hover:text-textPrimary transition-colors whitespace-nowrap">ID <i data-lucide="arrow-up-down" class="inline h-3 w-3 ml-0.5 opacity-50"></i></th>
+              <th onclick="ordina('scadenza')" class="cursor-pointer p-3.5 hover:text-textPrimary transition-colors whitespace-nowrap">Data scadenza <i data-lucide="arrow-up-down" class="inline h-3 w-3 ml-0.5 opacity-50"></i></th>
+              <th onclick="ordina('stato')" class="cursor-pointer p-3.5 hover:text-textPrimary transition-colors whitespace-nowrap">Stato <i data-lucide="arrow-up-down" class="inline h-3 w-3 ml-0.5 opacity-50"></i></th>
+              <th onclick="ordina('richiedente')" class="cursor-pointer p-3.5 hover:text-textPrimary transition-colors whitespace-nowrap">Richiedente <i data-lucide="arrow-up-down" class="inline h-3 w-3 ml-0.5 opacity-50"></i></th>
+              <th onclick="ordina('posizione')" class="cursor-pointer p-3.5 hover:text-textPrimary transition-colors whitespace-nowrap">Posizione Insegna <i data-lucide="arrow-up-down" class="inline h-3 w-3 ml-0.5 opacity-50"></i></th>
+              <th onclick="ordina('tipo_mezzo')" class="cursor-pointer p-3.5 hover:text-textPrimary transition-colors whitespace-nowrap">Tipo Mezzo <i data-lucide="arrow-up-down" class="inline h-3 w-3 ml-0.5 opacity-50"></i></th>
+              <th class="p-3.5 text-right font-medium">Azioni</th>
+            </tr>
+          </thead>
+          <tbody id="tbody" class="divide-y divide-borderCol/40 font-normal text-textPrimary"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="sezione-scadute" class="space-y-4" style="display:none">
+    <div class="flex items-center gap-2 border-b border-borderCol pb-3">
+      <i data-lucide="alert-octagon" class="h-5 w-5 text-danger"></i>
+      <h2 class="text-base font-semibold tracking-tight text-textPrimary">Elenco Autorizzazioni Scadute</h2>
+    </div>
+    <div class="text-xs font-medium text-textSecondary px-1" id="info-scadute"></div>
+    
+    <div class="overflow-hidden rounded-xl border border-borderCol bg-surface shadow-md">
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse text-xs text-left">
+          <thead>
+            <tr class="border-b border-borderCol bg-bgMain/40 font-medium text-textSecondary">
+              <th class="p-3.5">ID</th>
+              <th class="p-3.5">Data scadenza</th>
+              <th class="p-3.5">Richiedente</th>
+              <th class="p-3.5">Posizione Insegna</th>
+              <th class="p-3.5">Tipo Mezzo</th>
+              <th class="p-3.5 text-right">Ritardo</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-scadute" class="divide-y divide-borderCol/40 font-normal text-textPrimary"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div id="toast" class="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-surface border border-borderCol px-4 py-3 text-xs font-medium shadow-xl translate-y-2 pointer-events-none transition-all duration-300"></div>
+
+<div id="modal-overlay" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200 flex items-center justify-center p-4">
+  <div class="w-full max-w-md transform scale-95 rounded-xl border border-borderCol bg-surface p-6 shadow-2xl transition-all duration-200 modal-transition">
+    
+    <div class="flex items-center justify-between mb-5">
+      <h2 id="modal-titolo" class="text-sm font-semibold tracking-tight text-textPrimary">Nuova Scheda Autorizzazione</h2>
+      <button onclick="chiudiModale()" class="rounded-md p-1 text-textSecondary hover:bg-white/5 hover:text-textPrimary transition-colors">
+        <i data-lucide="x" class="h-4 w-4"></i>
+      </button>
+    </div>
+    
+    <input type="hidden" id="modal-numero">
+    
+    <div class="space-y-4">
+      <div>
+        <label class="block text-xs font-medium text-textSecondary mb-1.5">Data scadenza <span class="text-textSecondary/50">(gg/mm/aaaa o dicitura speciale)</span></label>
+        <input type="text" id="f-scadenza" placeholder="es. 18.09.2026 o ANNULLATA"
+               class="w-full rounded-lg border border-borderCol bg-bgMain px-3 py-2 text-xs text-textPrimary placeholder:text-textSecondary/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all duration-150">
+      </div>
+      
+      <div>
+        <label class="block text-xs font-medium text-textSecondary mb-1.5">Soggetto Richiedente *</label>
+        <input type="text" id="f-richiedente" placeholder="es. Ditta Rossi S.r.l."
+               class="w-full rounded-lg border border-borderCol bg-bgMain px-3 py-2 text-xs text-textPrimary placeholder:text-textSecondary/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all duration-150">
+      </div>
+      
+      <div>
+        <label class="block text-xs font-medium text-textSecondary mb-1.5">Posizione Insegna/Mezzo</label>
+        <input type="text" id="f-posizione" placeholder="es. Via Roma, 45"
+               class="w-full rounded-lg border border-borderCol bg-bgMain px-3 py-2 text-xs text-textPrimary placeholder:text-textSecondary/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all duration-150">
+      </div>
+      
+      <div>
+        <label class="block text-xs font-medium text-textSecondary mb-1.5">Descrizione Completa Mezzo Pubblicitario *</label>
+        <input type="text" id="f-tipo" placeholder="es. INSEGNA BIFACCIALE LUMINOSA DITTA"
+               class="w-full rounded-lg border border-borderCol bg-bgMain px-3 py-2 text-xs text-textPrimary placeholder:text-textSecondary/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all duration-150">
+      </div>
+    </div>
+    
+    <div class="mt-6 flex items-center justify-end gap-2.5">
+      <button onclick="chiudiModale()" class="rounded-lg border border-borderCol bg-bgMain px-4 py-2 text-xs font-medium text-textPrimary hover:bg-white/5 transition-all duration-150">Annulla</button>
+      <button onclick="salvaModale()" class="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primaryHover transition-all duration-150">Salva Modifiche</button>
+    </div>
+
+  </div>
+</div>
+
+<input type="file" id="input-csv" accept=".csv" style="display:none" onchange="handleCSVUpload(event)">
+
+<script>
+let dati = [], dati_filtrati = [], sort_col = 'numero', sort_asc = true, modal_mode = 'inserimento';
+
+let chartStatoInstance = null;
+let chartMezziInstance = null;
+let chartScadenzeInstance = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+  caricaDati();
+});
+
+async function caricaDati() {
+  try {
+    const res = await fetch('/api/autorizzazioni');
+    dati = await res.json();
+    aggiornaDashboard();
+    aggiornaGrafici(); 
+    filtra();
+  } catch(e) { toast('Errore caricamento database: ' + e.message, 'err'); }
+}
+
+async function aggiornaDashboard() {
+  try {
+    const res = await fetch('/api/info');
+    const info = await res.json();
+    document.getElementById('c-totale').textContent  = info.totale;
+    document.getElementById('c-attive').textContent  = info.attive;
+    document.getElementById('c-scadute').textContent = info.scadute;
+    document.getElementById('c-tipo').textContent    = info.tipo_max;
+  } catch(e) {}
+}
+
+function aggiornaGrafici() {
+  const oggi = new Date();
+  oggi.setHours(0,0,0,0);
+
+  let attive = 0;
+  let scadute = 0;
+  let categorieCount = {};
+  let scaduteMeno1Mese = 0;
+  let scadute1a3Mesi = 0;
+  let scadutePiu3Mesi = 0;
+
+  dati.forEach(r => {
+    if (r.stato === 'ATTIVA') attive++;
+    if (r.stato === 'SCADUTA') {
+      scadute++;
+      
+      if (r.scadenza_iso) {
+        const dataScadenza = new Date(r.scadenza_iso);
+        const diffGiorni = Math.floor((oggi - dataScadenza) / (1000 * 60 * 60 * 24));
+        
+        if (diffGiorni <= 30) {
+          scaduteMeno1Mese++;
+        } else if (diffGiorni <= 90) {
+          scadute1a3Mesi++;
+        } else {
+          scadutePiu3Mesi++;
+        }
+      } else {
+        scadutePiu3Mesi++;
+      }
+    }
+
+    let cat = 'ALTRO';
+    const t = (r.tipo_mezzo || '').toUpperCase();
+    if (t.includes('CARTELLO') || t.includes('CARTELLONE')) cat = 'CARTELLO';
+    else if (t.includes('ROTONDA')) cat = 'ROTONDA';
+    else if (t.includes('TOTEM')) cat = 'TOTEM';
+    else if (t.includes('INSEGNA')) cat = 'INSEGNA';
+    else if (t.includes('VETROFAN')) cat = 'VETROFANIA';
+    else if (t.includes('CARRELLO')) cat = 'CARRELLO';
+    
+    categorieCount[cat] = (categorieCount[cat] || 0) + 1;
+  });
+
+  const categorieOrdinate = Object.entries(categorieCount).sort((a, b) => b[1] - a[1]);
+  const labelsMezzi = categorieOrdinate.map(el => el[0]);
+  const dataMezzi = categorieOrdinate.map(el => el[1]);
+
+  document.getElementById('analytics-totale').textContent = `Totale: ${dati.length}`;
+  document.getElementById('analytics-scadute-totale').textContent = `${scadute} Autorizzazioni Scadute`;
+
+  const chartFontConfig = { family: 'Geist, Inter, sans-serif', size: 11 };
+  const gridColorConfig = 'rgba(255, 255, 255, 0.04)';
+  const textPrimaryColor = '#F8FAFC';
+  const textSecondaryColor = '#94A3B8';
+
+  if (chartStatoInstance) chartStatoInstance.destroy();
+  const ctxStato = document.getElementById('chartStato').getContext('2d');
+  chartStatoInstance = new Chart(ctxStato, {
+    type: 'pie',
+    data: {
+      labels: ['Attive', 'Scadute'],
+      datasets: [{
+        data: [attive, scadute],
+        backgroundColor: ['#10B981', '#EF4444'],
+        borderWidth: 2,
+        borderColor: '#171923',
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: textSecondaryColor, font: chartFontConfig, boxWidth: 12 }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const valor = context.raw || 0;
+              const total = attive + scadute;
+              const pct = total > 0 ? ((valor / total) * 100).toFixed(1) : 0;
+              return ` ${context.label}: ${valor} (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  if (chartMezziInstance) chartMezziInstance.destroy();
+  const ctxMezzi = document.getElementById('chartMezzi').getContext('2d');
+  chartMezziInstance = new Chart(ctxMezzi, {
+    type: 'bar',
+    data: {
+      labels: labelsMezzi.length ? labelsMezzi : ['Nessun dato'],
+      datasets: [{
+        label: 'Quantità',
+        data: dataMezzi.length ? dataMezzi : [0],
+        backgroundColor: 'rgba(139, 92, 246, 0.8)',
+        borderColor: '#8B5CF6',
+        borderWidth: 1,
+        borderRadius: 4,
+        hoverBackgroundColor: '#7C3AED'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { font: chartFontConfig }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: textSecondaryColor, font: chartFontConfig }
+        },
+        y: {
+          grid: { color: gridColorConfig },
+          ticks: { color: textSecondaryColor, font: chartFontConfig, precision: 0 },
+          beginAtZero: true
+        }
+      }
+    }
+  });
+
+  if (chartScadenzeInstance) chartScadenzeInstance.destroy();
+  const ctxScadenze = document.getElementById('chartScadenze').getContext('2d');
+  chartScadenzeInstance = new Chart(ctxScadenze, {
+    type: 'bar',
+    data: {
+      labels: ['Meno di 1 mese', 'Da 1 a 3 mesi', 'Più di 3 mesi'],
+      datasets: [{
+        data: [scaduteMeno1Mese, scadute1a3Mesi, scadutePiu3Mesi],
+        backgroundColor: ['#F59E0B', '#EF4444', '#8B5CF6'],
+        borderRadius: 4,
+        borderWidth: 0,
+        barThickness: 45
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const valor = context.raw || 0;
+              const pct = scadute > 0 ? ((valor / scadute) * 100).toFixed(1) : 0;
+              return ` Record: ${valor} (${pct}% delle scadute)`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: textPrimaryColor, font: { family: 'Geist, Inter, sans-serif', size: 11, weight: '500' } }
+        },
+        y: {
+          grid: { color: gridColorConfig },
+          ticks: { color: textSecondaryColor, font: chartFontConfig, precision: 0 },
+          beginAtZero: true
+        }
+      }
+    }
+  });
+}
+
+function filtra() {
+  const testo = document.getElementById('filtro-testo').value.toLowerCase();
+  const stato = document.getElementById('filtro-stato').value;
+  const tipoFiltro = document.getElementById('filtro-tipo').value;
+
+  dati_filtrati = dati.filter(r => {
+    const matchTesto = !testo || [r.richiedente, r.posizione, r.tipo_mezzo, String(r.numero)].some(v => (v || '').toLowerCase().includes(testo));
+    const matchStato = !stato || r.stato === stato;
+    const matchTipo  = !tipoFiltro || (r.tipo_mezzo || '').toUpperCase().includes(tipoFiltro);
+    return matchTesto && matchStato && matchTipo;
+  });
+  ordinaEMostra();
+}
+
+function resetFiltri() {
+  document.getElementById('filtro-testo').value = '';
+  document.getElementById('filtro-stato').value = '';
+  document.getElementById('filtro-tipo').value  = '';
+  filtra();
+}
+
+function ordina(col) {
+  if (sort_col === col) sort_asc = !sort_asc; else { sort_col = col; sort_asc = true; }
+  ordinaEMostra();
+}
+
+function ordinaEMostra() {
+  dati_filtrati.sort((a, b) => {
+    let va = a[sort_col] ?? '', vb = b[sort_col] ?? '';
+    if (sort_col === 'numero') { va = Number(va); vb = Number(vb); }
+    else { va = String(va).toLowerCase(); vb = String(vb).toLowerCase(); }
+    return va < vb ? (sort_asc ? -1 : 1) : va > vb ? (sort_asc ? 1 : -1) : 0;
+  });
+  renderTabella(dati_filtrati);
+}
+
+function ottieniBadgeHTML(stato) {
+  let stile = "";
+  switch(stato) {
+    case "ATTIVA":     stile = "bg-success/10 text-success border border-success/20"; break;
+    case "SCADUTA":    stile = "bg-danger/10 text-danger border border-danger/20"; break;
+    case "ANNULLATA":  stile = "bg-white/5 text-textSecondary border border-white/10"; break;
+    case "NEGATA":     stile = "bg-orange-500/10 text-orange-400 border border-orange-500/20"; break;
+    case "SOSPESA":    stile = "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20"; break;
+    case "RIGETTATA":  stile = "bg-purple-500/10 text-purple-400 border border-purple-500/20"; break;
+    default:           stile = "bg-white/5 text-textPrimary border border-white/10";
+  }
+  return `<span class="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold tracking-wide ${stile}">${stato}</span>`;
+}
+
+function renderTabella(righe) {
+  const tbody = document.getElementById('tbody');
+  const oggi = new Date(); oggi.setHours(0,0,0,0);
+  tbody.innerHTML = '';
+  document.getElementById('table-info').textContent = `Record visualizzati: ${righe.length} su un totale di ${dati.length}`;
+
+  righe.forEach(r => {
+    const tr = document.createElement('tr');
+    tr.className = "hover:bg-surfaceHover/50 transition-colors duration-150";
+    if (r.stato === 'SCADUTA' && r.scadenza_iso) {
+      const giorni = Math.floor((oggi - new Date(r.scadenza_iso)) / 86400000);
+      tr.className = giorni > 365 ? 'scaduta-grave' : giorni > 90 ? 'scaduta-media' : 'scaduta-lieve';
+    }
+    
+    tr.innerHTML = `
+      <td class="p-3.5 font-medium text-textSecondary">#${r.numero}</td>
+      <td class="p-3.5 font-medium whitespace-nowrap">${r.scadenza || '—'}</td>
+      <td class="p-3.5">${ottieniBadgeHTML(r.stato)}</td>
+      <td class="p-3.5 font-semibold text-textPrimary">${r.richiedente}</td>
+      <td class="p-3.5 text-textSecondary max-w-xs truncate">${r.posizione || '—'}</td>
+      <td class="p-3.5 text-textSecondary font-mono text-[11px]">${r.tipo_mezzo || '—'}</td>
+      <td class="p-3.5 text-right whitespace-nowrap">
+        <div class="inline-flex gap-1">
+          <button class="inline-flex h-7 items-center justify-center rounded-md border border-borderCol bg-bgMain px-2.5 font-medium text-textSecondary hover:text-primary hover:border-primary/40 transition-colors" onclick="apriModifica(${r.numero})">Modifica</button>
+          <button class="inline-flex h-7 items-center justify-center rounded-md border border-borderCol bg-bgMain px-2.5 font-medium text-textSecondary hover:text-danger hover:border-danger/40 transition-colors" onclick="eliminaConferma(${r.numero}, '${r.richiedente.replace(/'/g,"\\'")}')">Rimuovi</button>
+        </div>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function mostraSezione(quale) {
+  document.getElementById('sezione-home').style.display    = quale === 'home'    ? '' : 'none';
+  document.getElementById('sezione-scadute').style.display = quale === 'scadute' ? '' : 'none';
+  
+  const tabHome = document.getElementById('nav-home');
+  const tabScadute = document.getElementById('nav-scadute');
+  
+  if (quale === 'home') {
+    tabHome.className = "flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium bg-white/5 text-textPrimary transition-all duration-150";
+    tabScadute.className = "flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium text-textSecondary hover:text-textPrimary hover:bg-white/5 transition-all duration-150";
+  } else {
+    tabHome.className = "flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium text-textSecondary hover:text-textPrimary hover:bg-white/5 transition-all duration-150";
+    tabScadute.className = "flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium bg-white/5 text-textPrimary transition-all duration-150";
+    renderScadute();
+  }
+}
+
+function renderScadute() {
+  const oggi = new Date(); oggi.setHours(0,0,0,0);
+  const scadute = dati.filter(r => r.stato === 'SCADUTA').sort((a, b) => (a.scadenza_iso || '').localeCompare(b.scadenza_iso || ''));
+  document.getElementById('info-scadute').textContent = `Incoerenze/Scadenze rilevate: ${scadute.length} record critici`;
+  const tbody = document.getElementById('tbody-scadute'); tbody.innerHTML = '';
+  
+  scadute.forEach(r => {
+    const giorni = r.scadenza_iso ? Math.floor((oggi - new Date(r.scadenza_iso)) / 86400000) : '—';
+    const tr = document.createElement('tr');
+    if (typeof giorni === 'number') tr.className = giorni > 365 ? 'scaduta-grave' : giorni > 90 ? 'scaduta-media' : 'scaduta-lieve';
+    
+    tr.innerHTML = `
+      <td class="p-3.5 text-textSecondary">#${r.numero}</td>
+      <td class="p-3.5 font-medium">${r.scadenza}</td>
+      <td class="p-3.5 font-semibold text-textPrimary">${r.richiedente}</td>
+      <td class="p-3.5 text-textSecondary">${r.posizione || '—'}</td>
+      <td class="p-3.5 text-textSecondary font-mono text-[11px]">${r.tipo_mezzo}</td>
+      <td class="p-3.5 text-right font-bold text-danger">${giorni} giorni fa</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function apriModale(mode, r) {
+  modal_mode = mode;
+  document.getElementById('modal-titolo').textContent = mode === 'inserimento' ? 'Nuova Scheda Autorizzazione' : 'Aggiorna Record Esistente';
+  document.getElementById('modal-numero').value    = r ? r.numero : '';
+  document.getElementById('f-scadenza').value      = r ? r.scadenza    : '';
+  document.getElementById('f-richiedente').value   = r ? r.richiedente : '';
+  document.getElementById('f-posizione').value     = r ? r.posizione   : '';
+  document.getElementById('f-tipo').value          = r ? r.tipo_mezzo  : '';
+  
+  const overlay = document.getElementById('modal-overlay');
+  const modalBox = overlay.querySelector('.modal-transition');
+  
+  overlay.classList.remove('pointer-events-none');
+  overlay.classList.add('opacity-100');
+  modalBox.classList.remove('scale-95');
+  modalBox.classList.add('scale-100');
+  
+  document.getElementById('f-richiedente').focus();
+}
+
+function apriModifica(numero) { const r = dati.find(x => x.numero === numero); if (r) apriModale('modifica', r); }
+
+function chiudiModale() { 
+  const overlay = document.getElementById('modal-overlay');
+  const modalBox = overlay.querySelector('.modal-transition');
+  
+  overlay.classList.add('pointer-events-none');
+  overlay.classList.remove('opacity-100');
+  modalBox.classList.add('scale-95');
+  modalBox.classList.remove('scale-100');
+}
+
+async function salvaModale() {
+  const scadenza = document.getElementById('f-scadenza').value.trim();
+  const richiedente = document.getElementById('f-richiedente').value.trim();
+  const posizione = document.getElementById('f-posizione').value.trim();
+  const tipo_mezzo = document.getElementById('f-tipo').value.trim();
+
+  if (!richiedente || !tipo_mezzo) { toast('I campi Richiedente e Tipo Mezzo sono strettamente obbligatori', 'err'); return; }
+  const payload = { scadenza, richiedente, posizione, tipo_mezzo };
+  try {
+    let res, m = modal_mode;
+    if (m === 'inserimento') {
+      res = await fetch('/api/autorizzazioni', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+    } else {
+      const num = document.getElementById('modal-numero').value;
+      res = await fetch(`/api/autorizzazioni/${num}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+    }
+    const data = await res.json();
+    if (data.errore) { toast(data.errore, 'err'); return; }
+    chiudiModale(); 
+    toast(m === 'inserimento' ? `ID #${data.numero} creato con successo` : 'Modifica registrata nel database', 'ok');
+    await caricaDati();
+  } catch(e) { toast('Errore critico: ' + e.message, 'err'); }
+}
+
+function eliminaConferma(numero, richiedente) { if (confirm(`Rimuovere definitivamente l'autorizzazione ID #${numero} intestata a: ${richiedente}?`)) eliminaRecord(numero); }
+
+async function eliminaRecord(numero) {
+  try {
+    const data = await (await fetch(`/api/autorizzazioni/${numero}`, { method: 'DELETE' })).json();
+    if (data.errore) { toast(data.errore, 'err'); return; }
+    toast(`Record ID #${numero} rimosso definitivamente`, 'ok'); await caricaDati();
+  } catch(e) { toast('Errore: ' + e.message, 'err'); }
+}
+
+function caricaCSVEsterno() { document.getElementById('input-csv').click(); }
+
+async function handleCSVUpload(event) {
+  const file = event.target.files[0]; if (!file) return;
+  try {
+    const data = await (await fetch('/api/upload', { method: 'POST', headers: {'Content-Type': 'text/plain'}, body: await file.text() })).json();
+    if (data.errore) { toast(data.errore, 'err'); return; }
+    toast('File CSV importato correttamente sul server', 'ok'); await caricaDati(); event.target.value = '';
+  } catch(e) { toast('Errore durante l\'upload: ' + e.message, 'err'); }
+}
+
+function scaricaCSV() {
+  const righe = [['Numero autorizzazione','Data scadenza','Richiedente','Posizione insegna','Tipo di mezzo pubblico'], ...dati.map(r => [r.numero, r.scadenza, r.richiedente, r.posizione, r.tipo_mezzo])];
+  const csv = righe.map(r => r.map(v => `"${String(v ?? '').replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const blob = new Blob(['\uFEFF' + csv], {type: 'text/csv;charset=utf-8'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'autorizzazioni_backup.csv'; a.click();
+}
+
+function toast(msg, tipo = 'ok') {
+  const el = document.getElementById('toast'); el.textContent = msg; 
+  
+  if (tipo === 'ok') {
+    el.className = 'fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-surface border border-success/30 px-4 py-3 text-xs font-semibold shadow-xl text-success opacity-100 translate-y-0 transition-all duration-300';
+  } else {
+    el.className = 'fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-surface border border-danger/30 px-4 py-3 text-xs font-semibold shadow-xl text-danger opacity-100 translate-y-0 transition-all duration-300';
+  }
+  
+  clearTimeout(el._t); 
+  el._t = setTimeout(() => { 
+    el.className = 'fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-surface border border-borderCol px-4 py-3 text-xs font-medium shadow-xl translate-y-2 opacity-0 pointer-events-none transition-all duration-300'; 
+  }, 3500);
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') chiudiModale(); });
+document.getElementById('modal-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) chiudiModale(); });
+
+setTimeout(() => { lucide.createIcons(); }, 300);
+</script>
+</body>
+</html>
